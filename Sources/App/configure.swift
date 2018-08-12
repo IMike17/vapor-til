@@ -30,6 +30,7 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
         username: username,
         database: databaseName,
         password: password)
+    
     let database = PostgreSQLDatabase(config: databaseConfig)
     
 
