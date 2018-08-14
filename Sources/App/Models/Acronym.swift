@@ -13,4 +13,8 @@ final class Acronym: Codable {
     }
 }
 
-extension Acronym: PostgreSQLModel, Migration, Content {}
+extension Acronym: PostgreSQLModel, Migration {}
+
+extension Acronym: Content {}
+
+extension Acronym: Parameter {}
