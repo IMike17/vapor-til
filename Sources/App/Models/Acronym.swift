@@ -14,11 +14,20 @@ final class Acronym: Codable {
     }
 }
 
-extension Acronym: PostgreSQLModel, Migration {}
+extension Acronym: PostgreSQLModel {}
 
 extension Acronym: Content {}
 
 extension Acronym: Parameter {}
+
+extension Acronym: Migration {
+    static func prepare(on connection: PostgreSQLConnection) -> Future<Void> {
+        return Database.create(self, on: connection, closure: { (builder) in
+            try addProperties(to: builder)
+            builder.reference(from: \.userID, to: \User.id)
+        })
+    }
+}
 
 extension Acronym {
     var user: Parent<Acronym, User> {
