@@ -20,4 +20,22 @@ final class AcronymCategoryPivot: PostgreSQLUUIDPivot, ModifiablePivot {
 }
 
 // MARK: - Conforms
-extension AcronymCategoryPivot: Migration {}
+extension AcronymCategoryPivot: Migration {
+    static func prepare(on connection: PostgreSQLConnection) -> Future<Void> {
+        return Database
+            .create(self, on: connection,
+                    closure: { (builder) in
+                        try addProperties(to: builder)
+                        
+                        builder.reference(
+                            from: \.acronymID,
+                            to: \Acronym.id,
+                            onDelete: .restrict)
+                        
+                        builder.reference(
+                            from: \.categoryID,
+                            to: \Category.id,
+                            onDelete: .restrict)
+            })
+    }
+}
