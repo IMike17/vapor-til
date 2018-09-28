@@ -1,4 +1,3 @@
-import Foundation
 import Vapor
 import FluentPostgreSQL
 
@@ -13,10 +12,16 @@ final class User: Codable {
     }
 }
 
-extension User: PostgreSQLUUIDModel, Migration {}
+// MARK: - Conforms
+extension User: PostgreSQLUUIDModel {}
+
+extension User: Migration {}
+
 extension User: Content {}
+
 extension User: Parameter {}
 
+// MARK: - Relationships
 extension User {
     var acronyms: Children<User, Acronym> {
         return children(\.userID)

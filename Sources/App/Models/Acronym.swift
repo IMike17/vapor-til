@@ -14,11 +14,8 @@ final class Acronym: Codable {
     }
 }
 
+// MARK: - Conforms
 extension Acronym: PostgreSQLModel {}
-
-extension Acronym: Content {}
-
-extension Acronym: Parameter {}
 
 extension Acronym: Migration {
     static func prepare(on connection: PostgreSQLConnection) -> Future<Void> {
@@ -29,8 +26,17 @@ extension Acronym: Migration {
     }
 }
 
+extension Acronym: Content {}
+
+extension Acronym: Parameter {}
+
+// MARK: - Relationships
 extension Acronym {
     var user: Parent<Acronym, User> {
         return parent(\.userID)
+    }
+    
+    var categories: Siblings<Acronym, Category, AcronymCategoryPivot> {
+        return siblings()
     }
 }
