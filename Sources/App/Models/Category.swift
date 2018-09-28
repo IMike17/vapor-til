@@ -18,3 +18,10 @@ extension Category: Migration {}
 extension Category: Content {}
 
 extension Category: Parameter {}
+
+// MARK: - Relationships
+extension Category {
+    var acronyms: Siblings<Category, Acronym, AcronymCategoryPivot> {
+        return siblings()
+    }
+}
