@@ -113,4 +113,11 @@ final class UserTests: XCTestCase {
         XCTAssertEqual(acronyms[0].short, acronymShort)
         XCTAssertEqual(acronyms[0].long, acronymLong)
     }
+    
+    static let allTests = [
+        ("testUsersCanBeRetrievedFromAPI", testUsersCanBeRetrievedFromAPI),
+        ("testUserCanBeSavedWithAPI", testUserCanBeSavedWithAPI),
+        ("testGettingASingleUserFromAPI", testGettingASingleUserFromAPI),
+        ("testGettingAUsersAcronymsFromTheAPI", testGettingAUsersAcronymsFromTheAPI)
+    ]
 }
