@@ -4,11 +4,16 @@ import Leaf
 struct WebsiteController: RouteCollection {
 	func boot(router: Router) throws {
 		router.get(use: indexHandler)
-		router.get("acronyms", Acronym.parameter, use: acronymHandler)
-		router.get("users", User.parameter, use: userHandler)
-		router.get("users", use: allUsersHandler)
-		router.get("categories", use: allCategoriesHandler)
-		router.get("categories", Category.parameter, use: categoryHandler)
+		router.get("acronyms", Acronym.parameter, use: self.acronymHandler)
+		router.get("users", User.parameter, use: self.userHandler)
+		router.get("users", use: self.allUsersHandler)
+		router.get("categories", use: self.allCategoriesHandler)
+		router.get("categories", Category.parameter, use: self.categoryHandler)
+		router.get("acronyms", "create", use: self.createAcronymHandler)
+		router.post(Acronym.self, at: "acronyms", "create", use: self.createAcronymPostHandler)
+		router.get("acronyms", Acronym.parameter, "edit", use: self.editAcronymHandler)
+		router.post("acronyms", Acronym.parameter, "edit", use: self.editAcronymPostHandler)
+		router.post("acronyms", Acronym.parameter, "delete", use: self.deleteAcronymHandler)
 	}
 	
 	func indexHandler(_ req: Request) throws -> Future<View> {
@@ -87,6 +92,63 @@ struct WebsiteController: RouteCollection {
 				return try req.view().render("category", context)
 			})
 	}
+	
+	func createAcronymHandler(_ req: Request) throws -> Future<View> {
+		let context = CreateAcronymContext(
+			users: User.query(on: req).all())
+		
+		return try req.view().render("createAcronym", context)
+	}
+	
+	func createAcronymPostHandler(_ req: Request, acronym: Acronym) throws -> Future<Response> {
+		return acronym.save(on: req)
+			.map(to: Response.self, { acronym in
+				guard let id = acronym.id else {
+					throw Abort(HTTPResponseStatus.internalServerError)
+				}
+				
+				return req.redirect(to: "/acronyms/\(id)")
+			})
+	}
+	
+	func editAcronymHandler(_ req: Request) throws -> Future<View> {
+		return try req.parameters.next(Acronym.self)
+			.flatMap(to: View.self, { acronym in
+				let context = EditAcronymContext(
+					acronym: acronym,
+					users: User.query(on: req).all())
+				
+				return try req.view().render("createAcronym", context)
+			})
+		
+	}
+	
+	func editAcronymPostHandler(_ req: Request) throws -> Future<Response> {
+		return try flatMap(
+			to: Response.self,
+			req.parameters.next(Acronym.self),
+			req.content.decode(Acronym.self),
+			{ dbAcronym, newAcronym in
+				dbAcronym.short = newAcronym.short
+				dbAcronym.long = newAcronym.long
+				dbAcronym.userID = newAcronym.userID
+				
+				return dbAcronym.save(on: req)
+					.map(to: Response.self, { acronym in
+						guard let id = acronym.id else {
+							throw Abort(HTTPResponseStatus.internalServerError)
+						}
+						
+						return req.redirect(to: "/acronyms/\(id)")
+					})
+		})
+	}
+	
+	func deleteAcronymHandler(_ req: Request) throws -> Future<Response> {
+		return try req.parameters.next(Acronym.self)
+			.delete(on: req)
+			.transform(to: req.redirect(to: "/"))
+	}
 }
 
 struct AcronymContext: Encodable {
@@ -109,6 +171,18 @@ struct CategoryContext: Encodable {
 	let title: String
 	let category: Category
 	let acronyms: Future<[Acronym]>
+}
+
+struct CreateAcronymContext: Encodable {
+	let title = "Create An Acronym"
+	let users: Future<[User]>
+}
+
+struct EditAcronymContext: Encodable {
+	let title = "Edit Acronym"
+	let acronym: Acronym
+	let users: Future<[User]>
+	let editing = true
 }
 
 struct IndexContext: Encodable {
