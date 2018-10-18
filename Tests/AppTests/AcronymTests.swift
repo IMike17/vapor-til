@@ -20,6 +20,7 @@ final class AcronymTests: XCTestCase {
     
     override func tearDown() {
         conn.close()
+		try? app.syncShutdownGracefully()
     }
     
     //MARK:- Tests
