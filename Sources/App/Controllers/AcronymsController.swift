@@ -99,11 +99,12 @@ struct AcronymsController: RouteCollection {
     //MARK: - /acronyms/{id}/user
     //MARK: GET
     /// Get the User that owns the {id} acronym
-    func getUserHandler(_ req: Request) throws -> Future<User> {
+    func getUserHandler(_ req: Request) throws -> Future<User.Public> {
         return try req.parameters.next(Acronym.self)
-            .flatMap(to: User.self,
+            .flatMap(to: User.Public.self,
                      { acronym in
                         return acronym.user.get(on: req)
+							.convertToPublic()
             })
     }
     
