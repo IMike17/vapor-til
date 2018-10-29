@@ -47,7 +47,8 @@ final class CategoryTests: XCTestCase {
             method: .POST,
             headers: ["Content-Type": "application/json"],
             data: category,
-            decodeTo: Category.self)
+            decodeTo: Category.self,
+			loggedInRequest: true)
         
         XCTAssertEqual(receivedCategory.name, categoryName)
         XCTAssertNotNil(receivedCategory.id)
@@ -91,10 +92,12 @@ final class CategoryTests: XCTestCase {
         
         _ = try app.sendRequest(
             to: "/api/acronyms/\(acronym1.id!)/categories/\(category.id!)",
-            method: .POST)
+            method: .POST,
+			loggedInRequest: true)
         _ = try app.sendRequest(
             to: "/api/acronyms/\(acronym2.id!)/categories/\(category.id!)",
-            method: .POST)
+            method: .POST,
+			loggedInRequest: true)
         
         let acronyms = try app.getResponse(
             to: "\(categoriesURI)\(category.id!)/acronyms",

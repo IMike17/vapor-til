@@ -58,7 +58,8 @@ final class AcronymTests: XCTestCase {
             method: .POST,
             headers: ["Content-Type": "application/json"],
             data: acronym,
-            decodeTo: Acronym.self)
+            decodeTo: Acronym.self,
+			loggedInRequest: true)
         
         XCTAssertEqual(receivedAcronym.short, acronymShort)
         XCTAssertEqual(receivedAcronym.long, acronymLong)
@@ -98,7 +99,8 @@ final class AcronymTests: XCTestCase {
             to: "\(acronymsURI)\(acronym.id!)",
             method: .PUT,
             headers: ["Content-Type": "application/json"],
-            data: updatedAcronym)
+            data: updatedAcronym,
+			loggedInUser: newUser)
         
         let receivedAcronym = try app.getResponse(
             to: "\(acronymsURI)\(acronym.id!)",
@@ -124,7 +126,8 @@ final class AcronymTests: XCTestCase {
         
         _ = try app.sendRequest(
             to: "\(acronymsURI)\(acronym.id!)",
-            method: .DELETE)
+            method: .DELETE,
+			loggedInRequest: true)
         
         acronyms = try app.getResponse(
             to: acronymsURI,
@@ -142,10 +145,12 @@ final class AcronymTests: XCTestCase {
         
         _ = try app.sendRequest(
             to: "\(acronymsURI)\(acronym.id!)/categories/\(category1.id!)",
-            method: .POST)
+            method: .POST,
+			loggedInRequest: true)
         _ = try app.sendRequest(
             to: "\(acronymsURI)\(acronym.id!)/categories/\(category2.id!)",
-            method: .POST)
+            method: .POST,
+			loggedInRequest: true)
         
         let categories = try app.getResponse(
             to: "\(acronymsURI)\(acronym.id!)/categories",
@@ -164,7 +169,8 @@ final class AcronymTests: XCTestCase {
         
         _ = try app.sendRequest(
             to: "\(acronymsURI)\(acronym.id!)/categories/\(category.id!)",
-            method: .POST)
+            method: .POST,
+			loggedInRequest: true)
         
         let categories = try app.getResponse(
             to: "\(acronymsURI)\(acronym.id!)/categories",
@@ -174,7 +180,8 @@ final class AcronymTests: XCTestCase {
         
         _ = try app.sendRequest(
             to: "\(acronymsURI)\(acronym.id!)/categories/\(category.id!)",
-            method: .DELETE)
+            method: .DELETE,
+			loggedInRequest: true)
         
         XCTAssertEqual(categories.count, 1)
     }
@@ -187,7 +194,7 @@ final class AcronymTests: XCTestCase {
         
         let acronymUser = try app.getResponse(
             to: "\(acronymsURI)\(acronym.id!)/user",
-            decodeTo: User.self)
+            decodeTo: User.Public.self)
         
         XCTAssertEqual(acronymUser.id, user.id)
         XCTAssertEqual(acronymUser.name, user.name)
