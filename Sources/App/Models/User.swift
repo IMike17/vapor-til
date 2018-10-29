@@ -49,6 +49,10 @@ extension User: BasicAuthenticatable {
 	static let passwordKey: PasswordKey = \User.password
 }
 
+extension User: TokenAuthenticatable {
+	typealias TokenType = Token
+}
+
 // MARK: - Public
 extension User.Public: Content {}
 
@@ -73,3 +77,26 @@ extension User {
     }
 }
 
+
+// MARK: - Seed
+struct AdminUser: Migration {
+	typealias Database = PostgreSQLDatabase
+	
+	static func prepare(on conn: PostgreSQLConnection) -> Future<Void> {
+		let password = try? BCrypt.hash("password")
+		guard let hashedPassword = password else {
+			fatalError("Failed to create admin user")
+		}
+		
+		let user = User(
+			name: "Admin",
+			username: "admin",
+			password: hashedPassword)
+		
+		return user.save(on: conn).transform(to: ())
+	}
+	
+	static func revert(on conn: PostgreSQLConnection) -> Future<Void> {
+		return Future.done(on: conn)
+	}
+}
