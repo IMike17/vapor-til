@@ -30,12 +30,12 @@ extension AcronymCategoryPivot: Migration {
                         builder.reference(
                             from: \.acronymID,
                             to: \Acronym.id,
-                            onDelete: .restrict)
+                            onDelete: .cascade)
                         
                         builder.reference(
                             from: \.categoryID,
                             to: \Category.id,
-                            onDelete: .restrict)
+                            onDelete: .cascade)
             })
     }
 }
