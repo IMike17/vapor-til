@@ -1,11 +1,11 @@
 import Vapor
 import Fluent
+import Authentication
 
 struct AcronymsController: RouteCollection {
     func boot(router: Router) {
         let acronymsRoutes = router.grouped("api", "acronyms")
         acronymsRoutes.get(use: getAllHandler)
-        acronymsRoutes.post(Acronym.self, use: createHandler)
         acronymsRoutes.get(Acronym.parameter, use: getHandler)
         acronymsRoutes.put(Acronym.parameter, use: updateHanlder)
         acronymsRoutes.delete(Acronym.parameter, use: deleteHandler)
@@ -16,7 +16,12 @@ struct AcronymsController: RouteCollection {
         acronymsRoutes.get("search", use: searchHandler)
         acronymsRoutes.get("first", use: getFirstHandler)
         acronymsRoutes.get("sorted", use: sortedHandler)
-        
+		
+		let basicAuthMiddleware = User.basicAuthMiddleware(using: BCryptDigest())
+		let guardAuthMiddleware = User.guardAuthMiddleware()
+		
+		let protected = acronymsRoutes.grouped(basicAuthMiddleware, guardAuthMiddleware)
+		protected.post(Acronym.self, use: createHandler)
     }
 
     //MARK: - /acronyms

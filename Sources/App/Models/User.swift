@@ -1,5 +1,6 @@
 import Vapor
 import FluentPostgreSQL
+import Authentication
 
 final class User: Codable {
     var id: UUID?
@@ -41,6 +42,12 @@ extension User: Migration {
 extension User: Parameter {}
 
 extension User: PostgreSQLUUIDModel {}
+
+// MARK: - Authentication
+extension User: BasicAuthenticatable {
+	static let usernameKey: UsernameKey = \User.username
+	static let passwordKey: PasswordKey = \User.password
+}
 
 // MARK: - Public
 extension User.Public: Content {}
