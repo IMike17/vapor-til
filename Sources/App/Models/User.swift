@@ -49,6 +49,10 @@ extension User: BasicAuthenticatable {
 	static let passwordKey: PasswordKey = \User.password
 }
 
+extension User: PasswordAuthenticatable {}
+
+extension User: SessionAuthenticatable {}
+
 extension User: TokenAuthenticatable {
 	typealias TokenType = Token
 }
