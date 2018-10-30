@@ -48,12 +48,23 @@ struct WebsiteController: RouteCollection {
 	}
 	
 	func createAcronymHandler(_ req: Request) throws -> Future<View> {
-		let context = CreateAcronymContext()
+		let token = try CryptoRandom()
+			.generateData(count: 16)
+			.base64EncodedString()
+		let context = CreateAcronymContext(csrfToken: token)
+		try req.session()["CSRF_TOKEN"] = token
 		
 		return try req.view().render("createAcronym", context)
 	}
 	
 	func createAcronymPostHandler(_ req: Request, data: CreateAcronymData) throws -> Future<Response> {
+		let expectedToken = try req.session()["CSRF_TOKEN"]
+		try req.session()["CSRF_TOKEN"] = nil
+		
+		guard expectedToken == data.csrfToken else {
+			throw Abort(.badRequest)
+		}
+		
 		let user = try req.requireAuthenticated(User.self)
 		let acronym = try Acronym(
 			short: data.short,
@@ -185,10 +196,12 @@ struct WebsiteController: RouteCollection {
 			.flatMap(to: View.self, { acronyms in
 				let acronymsData = acronyms.isEmpty ? nil : acronyms
 				let userLoggedIn = try req.isAuthenticated(User.self)
+				let showCookieMessage = req.http.cookies["cookies-accepted"] == nil
 				let context = IndexContext(
 					title: "Homepage",
 					acronyms: acronymsData,
-					userLoggedIn: userLoggedIn)
+					userLoggedIn: userLoggedIn,
+					showCookieMessage: showCookieMessage)
 				return try req.view().render("index", context)
 			})
 	}
@@ -272,12 +285,14 @@ struct AcronymContext: Encodable {
 
 struct CreateAcronymContext: Encodable {
 	let title = "Create An Acronym"
+	let csrfToken: String
 }
 
 struct CreateAcronymData: Content {
 	let short: String
 	let long: String
 	let categories: [String]?
+	let csrfToken: String
 }
 
 struct EditAcronymContext: Encodable {
@@ -304,6 +319,7 @@ struct IndexContext: Encodable {
 	let title: String
 	let acronyms: [Acronym]?
 	let userLoggedIn: Bool
+	let showCookieMessage: Bool
 }
 
 // MARK: - Index
