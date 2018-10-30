@@ -8,6 +8,9 @@
 }
 
 <form method="post">
+	#if(csrfToken) {
+	<input type="hidden" name="csrfToken" value="#(csrfToken)"/>
+	}
 	<div class="form-group">
 		<label for="username">Username</label>
 		<input type="text" name="username" class="form-control" id="username"/>

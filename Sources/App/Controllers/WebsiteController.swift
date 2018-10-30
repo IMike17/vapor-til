@@ -12,8 +12,8 @@ struct WebsiteController: RouteCollection {
 		authSessionRoutes.get("categories", Category.parameter, use: categoryHandler)
 		authSessionRoutes.get(use: indexHandler)
 		authSessionRoutes.get("login", use: loginHandler)
-		authSessionRoutes.post("logout", use: logoutHandler)
 		authSessionRoutes.post(LoginPostData.self, at:"login", use: loginPostHandler)
+		authSessionRoutes.post("logout", use: logoutHandler)
 		authSessionRoutes.get("users", use: allUsersHandler)
 		authSessionRoutes.get("users", User.parameter, use: userHandler)
 		
@@ -21,7 +21,7 @@ struct WebsiteController: RouteCollection {
 		let protectedRoutes = authSessionRoutes.grouped(RedirectMiddleware<User>(path: "/login"))
 		protectedRoutes.get("acronyms", "create", use: createAcronymHandler)
 		protectedRoutes.post(CreateAcronymData.self, at: "acronyms", "create", use: createAcronymPostHandler)
-		protectedRoutes.post("acronyms", Acronym.parameter, "delete", use: deleteAcronymHandler)
+		protectedRoutes.post(DeleteAcronymData.self, at: "acronyms", Acronym.parameter, "delete", use: deleteAcronymHandler)
 		protectedRoutes.get("acronyms", Acronym.parameter, "edit", use: editAcronymHandler)
 		protectedRoutes.post("acronyms", Acronym.parameter, "edit", use: editAcronymPostHandler)
 	}
@@ -36,11 +36,17 @@ struct WebsiteController: RouteCollection {
 					.get(on: req)
 					.flatMap(to: View.self, { user in
 						let categories = try acronym.categories.query(on: req).all()
+						let token = try CryptoRandom()
+							.generateData(count: 16)
+							.base64EncodedString()
+						try req.session()["CSRF_TOKEN"] = token
+						
 						let context = AcronymContext(
 							title: acronym.short,
 							acronym: acronym,
 							user: user,
-							categories: categories)
+							categories: categories,
+							csrfToken: token)
 						
 						return try req.view().render("acronym", context)
 					})
@@ -90,7 +96,13 @@ struct WebsiteController: RouteCollection {
 			})
 	}
 	
-	func deleteAcronymHandler(_ req: Request) throws -> Future<Response> {
+	func deleteAcronymHandler(_ req: Request, data: DeleteAcronymData) throws -> Future<Response> {
+		let expectedToken = try req.session()["CSRF_TOKEN"]
+		try req.session()["CSRF_TOKEN"] = nil
+
+		guard expectedToken == data.csrfToken else {
+			throw Abort(.badRequest)
+		}
 		return try req.parameters.next(Acronym.self).delete(on: req).transform(to: req.redirect(to: "/"))
 	}
 	
@@ -98,9 +110,14 @@ struct WebsiteController: RouteCollection {
 		return try req.parameters.next(Acronym.self)
 			.flatMap(to: View.self, { acronym in
 				let categories = try acronym.categories.query(on: req).all()
+				let token = try CryptoRandom()
+					.generateData(count: 16)
+					.base64EncodedString()
+				try req.session()["CSRF_TOKEN"] = token
 				let context = EditAcronymContext(
 					acronym: acronym,
-					categories: categories)
+					categories: categories,
+					csrfToken: token)
 				
 				return try req.view().render("createAcronym", context)
 			})
@@ -113,6 +130,12 @@ struct WebsiteController: RouteCollection {
 			req.parameters.next(Acronym.self),
 			req.content.decode(CreateAcronymData.self),
 			{ acronym, data in
+				let expectedToken = try req.session()["CSRF_TOKEN"]
+				try req.session()["CSRF_TOKEN"] = nil
+				
+				guard expectedToken == data.csrfToken else {
+					throw Abort(.badRequest)
+				}
 				let user = try req.requireAuthenticated(User.self)
 				acronym.short = data.short
 				acronym.long = data.long
@@ -208,18 +231,30 @@ struct WebsiteController: RouteCollection {
 	
 	// MARK: - Login Handlers
 	func loginHandler(_ req: Request) throws -> Future<View> {
+		let token = try CryptoRandom()
+			.generateData(count: 16)
+			.base64EncodedString()
+		try req.session()["CSRF_TOKEN"] = token
+		
 		let context: LoginContext
 		
 		if req.query[Bool.self, at: "error"] != nil {
-			context = LoginContext(loginError: true)
+			context = LoginContext(csrfToken: token, loginError: true)
 		} else {
-			context = LoginContext()
+			context = LoginContext(csrfToken: token)
 		}
 		
 		return try req.view().render("login", context)
 	}
 	
 	func loginPostHandler(_ req: Request, userData: LoginPostData) throws -> Future<Response> {
+		let expectedToken = try req.session()["CSRF_TOKEN"]
+		try req.session()["CSRF_TOKEN"] = nil
+		
+		guard expectedToken == userData.csrfToken else {
+			throw Abort(.badRequest)
+		}
+		
 		return User.authenticate(
 			username: userData.username,
 			password: userData.password,
@@ -281,6 +316,7 @@ struct AcronymContext: Encodable {
 	let acronym: Acronym
 	let user: User
 	let categories: Future<[Category]>
+	let csrfToken: String
 }
 
 struct CreateAcronymContext: Encodable {
@@ -300,6 +336,11 @@ struct EditAcronymContext: Encodable {
 	let acronym: Acronym
 	let categories: Future<[Category]>
 	let editing = true
+	let csrfToken: String
+}
+
+struct DeleteAcronymData: Content {
+	let csrfToken: String
 }
 
 // MARK: - Category
@@ -322,19 +363,22 @@ struct IndexContext: Encodable {
 	let showCookieMessage: Bool
 }
 
-// MARK: - Index
+// MARK: - Login
 struct LoginContext: Encodable {
 	let title = "Log In"
 	let loginError: Bool
+	let csrfToken: String
 	
-	init(loginError: Bool = false) {
+	init(csrfToken: String, loginError: Bool = false) {
 		self.loginError = loginError
+		self.csrfToken = csrfToken
 	}
 }
 
 struct LoginPostData: Content {
 	let username: String
 	let password: String
+	let csrfToken: String
 }
 
 // MARK: - User
