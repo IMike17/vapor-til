@@ -14,6 +14,8 @@ struct WebsiteController: RouteCollection {
 		authSessionRoutes.get("login", use: loginHandler)
 		authSessionRoutes.post(LoginPostData.self, at:"login", use: loginPostHandler)
 		authSessionRoutes.post("logout", use: logoutHandler)
+		authSessionRoutes.get("register", use: registerHandler)
+		authSessionRoutes.post(RegisterData.self, at: "register", use: registerPostHandler)
 		authSessionRoutes.get("users", use: allUsersHandler)
 		authSessionRoutes.get("users", User.parameter, use: userHandler)
 		
@@ -277,6 +279,45 @@ struct WebsiteController: RouteCollection {
 		return req.redirect(to: "/")
 	}
 	
+	// MARK: - Register Handlers
+	func registerHandler(_ req: Request) throws -> Future<View> {
+		let context: RegisterContext
+		if let message = req.query[String.self, at: "message"] {
+			context = RegisterContext(message: message)
+		} else {
+			context = RegisterContext()
+		}
+		return try req.view().render("register", context)
+	}
+	
+	func registerPostHandler(_ req: Request, data: RegisterData) throws -> Future<Response> {
+		do {
+			try data.validate()
+		} catch (let error) {
+			let redirect: String
+			if let error = error as? ValidationError,
+				let message = error.reason.addingPercentEncoding(withAllowedCharacters: CharacterSet.urlQueryAllowed) {
+				redirect = "/register?message=\(message)"
+			} else {
+				redirect = "/register?message=Unknown+error"
+			}
+			
+			return req.future(req.redirect(to: redirect))
+		}
+		
+		let password = try BCrypt.hash(data.password)
+		let user = User(
+			name: data.name,
+			username: data.username,
+			password: password)
+		
+		return user.save(on: req)
+			.map(to: Response.self, { user in
+				try req.authenticateSession(user)
+				return req.redirect(to: "/")
+			})
+	}
+	
 	// MARK: - User Handlers
 	func allUsersHandler(_ req: Request) throws -> Future<View> {
 		return User.query(on: req)
@@ -379,6 +420,41 @@ struct LoginPostData: Content {
 	let username: String
 	let password: String
 	let csrfToken: String
+}
+
+// MARK: - Register
+struct RegisterContext: Encodable {
+	let title = "Register"
+	let message : String?
+	
+	init(message: String? = nil) {
+		self.message = message
+	}
+}
+
+struct RegisterData: Content {
+	let name: String
+	let username: String
+	let password: String
+	let confirmPassword: String
+}
+
+extension RegisterData: Validatable, Reflectable {
+	static func validations() throws -> Validations<RegisterData> {
+		var validations = Validations(RegisterData.self)
+		
+		try validations.add(\.name, Validator<String>.characterSet(CharacterSet.alphanumerics))
+		try validations.add(\.username, .alphanumeric && .count(3...30))
+		try validations.add(\.password, .count(8...30))
+		
+		validations.add("passwords match") { model in
+			guard model.password == model.confirmPassword else {
+				throw BasicValidationError("passwords don’t match")
+			}
+		}
+		
+		return validations
+	}
 }
 
 // MARK: - User
