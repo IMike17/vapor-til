@@ -7,7 +7,7 @@ final class User: Codable {
     var name: String
     var username: String
 	var password: String
-    
+	
     init(name: String, username: String, password: String) {
         self.name = name
         self.username = username
@@ -87,7 +87,13 @@ struct AdminUser: Migration {
 	typealias Database = PostgreSQLDatabase
 	
 	static func prepare(on conn: PostgreSQLConnection) -> Future<Void> {
-		let password = try? BCrypt.hash("password")
+		let password : String?
+		if let psw = Environment.get("SEED_PASSWORD") {
+			password = try? BCrypt.hash(psw)
+		} else {
+			password = try? BCrypt.hash("password")
+		}
+		
 		guard let hashedPassword = password else {
 			fatalError("Failed to create admin user")
 		}
