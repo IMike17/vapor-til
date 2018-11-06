@@ -3,16 +3,16 @@ import FluentPostgreSQL
 import Authentication
 
 final class User: Codable {
-    var id: UUID?
-    var name: String
-    var username: String
+	var id: UUID?
+	var name: String
+	var username: String
 	var password: String
 	
-    init(name: String, username: String, password: String) {
-        self.name = name
-        self.username = username
+	init(name: String, username: String, password: String) {
+		self.name = name
+		self.username = username
 		self.password = password
-    }
+	}
 	
 	final class Public: Codable {
 		var id: UUID?
@@ -76,9 +76,9 @@ extension Future where T: User {
 
 // MARK: - Relationships
 extension User {
-    var acronyms: Children<User, Acronym> {
-        return children(\.userID)
-    }
+	var acronyms: Children<User, Acronym> {
+		return children(\.userID)
+	}
 }
 
 
@@ -87,13 +87,7 @@ struct AdminUser: Migration {
 	typealias Database = PostgreSQLDatabase
 	
 	static func prepare(on conn: PostgreSQLConnection) -> Future<Void> {
-		let password : String?
-		if let psw = Environment.get("SEED_PASSWORD") {
-			password = try? BCrypt.hash(psw)
-		} else {
-			password = try? BCrypt.hash("password")
-		}
-		
+		let password = try? BCrypt.hash("password")
 		guard let hashedPassword = password else {
 			fatalError("Failed to create admin user")
 		}
