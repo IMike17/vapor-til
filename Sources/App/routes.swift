@@ -14,8 +14,4 @@ public func routes(_ router: Router) throws {
     try router.register(collection: categoriesController)
 	try router.register(collection: webSiteController)
     
-    // Basic "Hello, world!" example
-    router.get("hello") { req in
-        return "Hello, world!"
-    }
 }
