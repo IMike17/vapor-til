@@ -37,6 +37,10 @@
 		Register
 	</button>
 </form>
+
+<a href="/login-google">
+	<img class="mt-3" src="/images/sign-in-with-google.png" alt="Sign In With Google"/>
+</a>
 }
 
 #embed("base")
