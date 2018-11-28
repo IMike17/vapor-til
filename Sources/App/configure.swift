@@ -7,8 +7,13 @@ import Authentication
 public func configure(_ config: inout Config, _ env: inout Environment, _ services: inout Services) throws {
 	
 	/// Configure server to use a custom port
-	services.register { _ in
-		NIOServerConfig.default(hostname: "localhost", port: 8008)
+	switch env {
+	case Environment.development, Environment.testing:
+		services.register { _ in
+			NIOServerConfig.default(hostname: "localhost", port: 8008)
+		}
+	default:
+		break
 	}
 	
     /// Register providers first
