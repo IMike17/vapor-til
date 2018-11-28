@@ -5,6 +5,12 @@ import Authentication
 
 /// Called before your application initializes.
 public func configure(_ config: inout Config, _ env: inout Environment, _ services: inout Services) throws {
+	
+	/// Configure server to use a custom port
+	services.register { _ in
+		NIOServerConfig.default(hostname: "localhost", port: 8008)
+	}
+	
     /// Register providers first
     try services.register(FluentPostgreSQLProvider())
 	try services.register(LeafProvider())
@@ -72,6 +78,7 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
     migrations.add(model: AcronymCategoryPivot.self, database: .psql)
 	migrations.add(model: Token.self, database: .psql)
 	migrations.add(migration: AdminUser.self, database: .psql)
+	migrations.add(migration: AddTwitterURLToUser.self, database: .psql)
     services.register(migrations)
     
     /// Configure commands

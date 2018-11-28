@@ -7,22 +7,26 @@ final class User: Codable {
 	var name: String
 	var username: String
 	var password: String
+	var twitterURL: String?
 	
-	init(name: String, username: String, password: String) {
+	init(name: String, username: String, password: String, twitterURL: String? = nil) {
 		self.name = name
 		self.username = username
 		self.password = password
+		self.twitterURL = twitterURL
 	}
 	
 	final class Public: Codable {
 		var id: UUID?
 		var name: String
 		var username: String
+		var twitterURL: String?
 		
-		init(id: UUID?, name: String, username: String) {
+		init(id: UUID?, name: String, username: String, twitterURL: String? = nil) {
 			self.id = id
 			self.name = name
 			self.username = username
+			self.twitterURL = twitterURL
 		}
 	}
 }
@@ -33,7 +37,10 @@ extension User: Content {}
 extension User: Migration {
 	static func prepare(on connection: PostgreSQLConnection) -> Future<Void> {
 		return Database.create(self, on: connection) { builder in
-			try addProperties(to: builder)
+			builder.field(for: \.id, isIdentifier: true)
+			builder.field(for: \.name)
+			builder.field(for: \.username)
+			builder.field(for: \.password)
 			builder.unique(on: \.username)
 		}
 	}
@@ -62,7 +69,7 @@ extension User.Public: Content {}
 
 extension User {
 	func convertToPublic() -> User.Public {
-		return User.Public(id: id, name: name, username: username)
+		return User.Public(id: id, name: name, username: username, twitterURL: twitterURL)
 	}
 }
 
